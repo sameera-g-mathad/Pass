@@ -4,7 +4,9 @@ import cv2 as cv
 import numpy as np
 import dlib
 from math import hypot
-
+import textwrap
+import enchant
+import time
 cv.namedWindow("PASS",cv.WINDOW_NORMAL)
 cv.resizeWindow("PASS",10000,10000)
 detector=dlib.get_frontal_face_detector()
@@ -13,12 +15,21 @@ img=np.zeros((500,500,3),np.uint8)
 img.fill(255)
 keyboard=np.zeros((600,1000,3),np.uint8)
 frames=0
+seconds=0
 numbers=["0","1","2","3","4","5","6","7","8","9"]
 alpa_set1=["Q","W","E","R","T","Y","U","I","O","P"]
 alpa_set2=["A","S","D","F","G","H","J","K","L","SP"]
-alpa_set3=["Z","X","C","V","B","N","M",",",".","NL"]
-row=1
-active=1
+alpa_set3=["Z","X","C","V","B","N","M",",",".","DL"]
+utils=["SEND MAIL","CLEAR"]
+suggested=["","","","","","","","","",""]
+keys=[suggested,numbers,alpa_set1,alpa_set2,alpa_set3,utils]
+selected=[]
+row=2
+active=0
+msg=""
+text=""
+suggestions=enchant.Dict("en_US")
+    
 def keyboardf():
     keyboard[:]=(104,110,103)
     width=100
@@ -26,65 +37,97 @@ def keyboardf():
     x=0
     y=0
     width_inc=0
-    for i in range(len(numbers)):
+    for i in range(len(suggested)):
         if active==i and row==0:
-            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height),(255,255,255),-1)
+            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
         else:
-            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height),(104,187,95),2)
-        width_x,height_y=cv.getTextSize(numbers[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
-        center_x=int((width-width_x)/2)+(x+width_inc)
-        center_y=int((height+height_y)/2)+y
-        cv.putText(keyboard,numbers[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(104,187,95),2)
+            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(204,236,97),2)
+        width_x,height_y=cv.getTextSize(suggested[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
+        center_x=(x+width_inc)+5
+        center_y=int((height)/2)
+        cv.putText(keyboard,suggested[i],(center_x,center_y),cv.FONT_HERSHEY_PLAIN,1.1,(204,236,97),1,cv.LINE_AA)
         width_inc+=100
     width=100
     height=100
     x=0
     y=100
     width_inc=0
+    for i in range(len(numbers)):
+        if active==i and row==1:
+            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
+        else:
+            cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(104,187,95),2)
+        width_x,height_y=cv.getTextSize(numbers[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
+        center_x=int((width-width_x)/2)+(x+width_inc)
+        center_y=int((height+height_y)/2)+y
+        cv.putText(keyboard,numbers[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(104,187,95),2,cv.LINE_AA)
+        width_inc+=100
+    width=100
+    height=100
+    x=0
+    y=200
+    width_inc=0
     for i in range(len(alpa_set1)):
-           if active==i and row==1:
-              cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
+           if active==i and row==2:
+               cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
            else:
                cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(75,105,242),2)
               
            width_x,height_y=cv.getTextSize(alpa_set1[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
            center_x=int((width-width_x)/2)+(x+width_inc)
            center_y=int((height+height_y)/2)+y
-           cv.putText(keyboard,alpa_set1[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(75,105,242),2)
-           width_inc+=100
-    width=100
-    height=100
-    x=0
-    y=200
-    width_inc=0
-    for i in range(len(alpa_set2)):
-           if active==i and row==2:
-              cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
-           else:
-               cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(74,214,240),2)
-              
-           width_x,height_y=cv.getTextSize(alpa_set2[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
-           center_x=int((width-width_x)/2)+(x+width_inc)
-           center_y=int((height+height_y)/2)+y
-           cv.putText(keyboard,alpa_set2[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(74,214,240),2)
+           cv.putText(keyboard,alpa_set1[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(75,105,242),2,cv.LINE_AA)
            width_inc+=100
     width=100
     height=100
     x=0
     y=300
     width_inc=0
-    for i in range(len(alpa_set3)):
+    for i in range(len(alpa_set2)):
            if active==i and row==3:
-              cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
+               cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
            else:
                cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(240,174,74),2)
+              
+           width_x,height_y=cv.getTextSize(alpa_set2[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
+           center_x=int((width-width_x)/2)+(x+width_inc)
+           center_y=int((height+height_y)/2)+y
+           cv.putText(keyboard,alpa_set2[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(240,174,74),2,cv.LINE_AA)
+           width_inc+=100
+    width=100
+    height=100
+    x=0
+    y=400
+    width_inc=0
+    for i in range(len(alpa_set3)):
+           if active==i and row==4:
+              cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
+           else:
+               cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(74,214,240),2)
               
            width_x,height_y=cv.getTextSize(alpa_set3[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
            center_x=int((width-width_x)/2)+(x+width_inc)
            center_y=int((height+height_y)/2)+y
-           cv.putText(keyboard,alpa_set3[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(240,174,74),2)
+           cv.putText(keyboard,alpa_set3[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(74,214,240),2,cv.LINE_AA)
            width_inc+=100
+    width=500
+    height=100
+    x=0
+    y=500
+    width_inc=0
+    for i in range(len(utils)):
+            if active==i and row==5:
+                cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(255,255,255),-1)
+            else:
+                cv.rectangle(keyboard,(x+width_inc,y),(width+width_inc,height+y),(99,82,241),2)
+              
+            width_x,height_y=cv.getTextSize(utils[i],cv.FONT_HERSHEY_SIMPLEX,2,2)[0]
+            center_x=int((width-width_x)/2)+(x+width_inc)
+            center_y=int((height+height_y)/2)+y
+            cv.putText(keyboard,utils[i],(center_x,center_y),cv.FONT_HERSHEY_COMPLEX,2,(99,82,241),2,cv.LINE_AA)
+            width_inc+=500
     return
+    
 cap=cv.VideoCapture(0)
 keyboardf()
 def midpoint(p1,p2):
@@ -152,10 +195,11 @@ def eye_gaze(eyepoints,landmark):
     if left_white!=0 and right_white!=0:
         gaze_ratio=left_white/right_white
         return gaze_ratio
-    return 1.5
-  
+    return 1
 while(cap.isOpened()):
     ret,frame=cap.read()
+    if len(text)==0:
+        img.fill(255)
     frame=cv.resize(frame,(500,500))
     gray=cv.cvtColor(frame,cv.COLOR_BGR2GRAY)
     
@@ -170,9 +214,39 @@ while(cap.isOpened()):
         
         right_eye=eyes_detect([36,37,38,39,40,41],landmarks)
         left_eye=eyes_detect([42,43,44,45,46,47],landmarks)
-        
+        #print(left_eye,right_eye)
         if left_eye<.15 and right_eye<.15:
-            cv.putText(frame, "blinked", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),3)
+            time.sleep(1)
+            cv.putText(frame, "blinked", (100,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,0,0),3)
+            frames-=2
+            if row==0:
+                    msg_split=msg.split(" ")
+                    msg_split[-1]=selected[active]
+                    msg=" "
+                    msg=msg.join(msg_split)
+                    img.fill(255)
+            else:
+                    if selected[active]=="":
+                        pass
+                    if selected[active]=="SP":
+                        msg+=" "
+                    elif selected[active]=="CLEAR":
+                        msg=""
+                    # if selected[active]=="DL":
+                    #     message=msg.split(" ")
+                    #     delword=message[-1]
+                        
+                    else:
+                        msg+=selected[active] 
+                        message=msg.split(" ")
+                        suggestions.check(message[-1])
+                        words=suggestions.suggest(message[-1])
+                        words=words[0:10]
+                        suggested[0:len(words)]= words
+                        keyboardf()
+            text=textwrap.wrap(msg,width=25)
+               
+            
             
             
         right_eye_gaze=eye_gaze([36,37,38,39,40,41],landmarks)
@@ -181,23 +255,28 @@ while(cap.isOpened()):
         avg_gaze=(left_eye_gaze+right_eye_gaze)/2
        
         if(avg_gaze<.5):
-            cv.putText(frame, "right", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,0,255),3)
+            #cv.putText(frame, "right", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,0,255),3)
             frames+=1
             if frames==10:
                 active+=1
                 if active>9:
                     active=0
                     row+=1
-                    if row>3:
+                    if row>5:
                         row=0
+                    selected=keys[row]
+                if row==5 and active>1:
+                    active=0
+                    row=0
+                    selected=keys[row]
                 keyboardf()
                 frames=0
             
         elif(avg_gaze>.5 and avg_gaze<2):
-            cv.putText(frame, "center", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,2,255),3)
-            #print("center",avg_gaze)
+           # cv.putText(frame, "center", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,2,255),3)
+            selected=keys[row]
         else:
-            cv.putText(frame, "left", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,5,255),3)
+            #cv.putText(frame, "left", (10,50), cv.FONT_HERSHEY_SIMPLEX, 2, (255,5,255),3)
             frames+=1
             if frames==10:
                 active-=1
@@ -205,14 +284,22 @@ while(cap.isOpened()):
                     active=9
                     row-=1
                     if row<0:
-                        row=3
+                        row=5
+                    if row==5:
+                        active=1
+                selected=keys[row]
+               
                 keyboardf()
                 frames=0
             #print("left",avg_gaze)
+    textx=0
+    texty=50
+    for i in text:
+        cv.putText(img,i,(textx,texty),cv.FONT_HERSHEY_TRIPLEX,1,(84,83,81),2)
+        texty+=50
     upper_window=np.concatenate((img,frame),axis=1)
     window=np.concatenate((upper_window,keyboard),axis=0)
     cv.imshow("PASS",window)
-    #cv.imshow("keyboard",keyboard) 
     if cv.waitKey(1)==ord("q") & 0xFF:
         break
     
